@@ -1,0 +1,161 @@
+---
+title: "Udacity R Assignment - Bikesharing"
+author: "James Nguyen"
+date: "28/04/2022"
+
+geometry: margin = 1.5cm
+fontsize: 11pt
+
+output:
+  pdf_document:
+      toc: TRUE
+      toc_depth: 3
+      number_sections: TRUE
+
+---
+\newpage
+
+# Bike Share Data
+Over the past decade, bicycle-sharing systems have been growing in number and popularity in cities across the world. Bicycle-sharing systems allow users to rent bicycles on a very short-term basis for a price. This allows people to borrow a bike from point A and return it at point B, though they can also return it to the same location if they'd like to just go for a ride. Regardless, each bike can serve several users per day.
+
+Thanks to the rise in information technologies, it is easy for a user of the system to access a dock within the system to unlock or return bicycles. These technologies also provide a wealth of data that can be used to explore how these bike-sharing systems are used.
+
+In this project, you will use data provided by *Motivate*, a bike share system provider for many major cities in the United States, to uncover bike share usage patterns. You will compare the system usage between three large cities: Chicago, New York City, and Washington, DC.
+
+The questions to explore include;
+  1. What are popular times of travel? i.e. common month? common day of week? common hour?
+  2. What are the most popular stations and trips?
+  3. What are the statistical breakdowns for trip duration?
+  4. What are the counts of each user type?
+ 
+
+\newpage
+
+Set-up and initial synthesis of the dataset is required in order to prepare for the questions later to explore. Installing the required packages followed by setting up the directory and importing the data will occur first. Some preliminary data manipulation will also occur to improve ease and efficiency of which we examine the data.
+
+```{r setup, include=TRUE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(lubridate)
+
+#Establishing the working directory and importing the data
+
+setwd("C:/Users/James Nguyen/Desktop/R/Udacity/Bikeshare")
+ny <- read.csv('new-york-city.csv')
+wash <- read.csv('washington.csv')
+chi <- read.csv('chicago.csv')
+
+head(ny)
+head(wash)
+head(chi)
+```
+
+```{r chunk 1, include=TRUE}
+##First wish to combine all working datasets
+#Washington lacks a gender and birth-year column, so we will first create a NA column 
+wash$Gender <- NA #'NONE' or any character types do not work as the bind_rows function needs matching datatypes
+wash$Birth.Year <- NA
+
+#Create a location column to retain city split
+ny$location <- 'NY'
+wash$location <- 'WASH'
+chi$location <- 'CHI'
+
+#Combine all datasets together into ALL, rbind as the variables are the same
+ALL <- bind_rows (ny, wash, chi)
+
+```
+
+# Question 1
+Question 1 examines the popular times of travel. Analysis is provided below to which was used to answer these questions.
+
+1. What is the most common month? June was consistently seen as the most popular month across all locations.
+2. What is the most common day of the week to travel? Wednesday was the most popular for Washington and New York, albeit Chicago saw Tuesday to be its most popular day.
+3. What is the most common hour of the day to travel? Chicago and New York saw 5:00PM to be its common hour of travel which aligns with common peak-hour notions. Washington however saw 8:00AM to be its common hour.
+
+```{r chunk 2, include=TRUE}
+class(ALL$Start.Time) #character
+
+##Lubridate is able to format character types into date formats
+#ALL$Start.Time <-as.POSIXlt(ALL$Start.Time, format="%d/%m/%Y")
+ALL$Start.Time <- ymd_hms(ALL$Start.Time)
+ALL$month <- month(ALL$Start.Time, label=TRUE)
+ALL$day <- wday(ALL$Start.Time, label=TRUE)
+ALL$hour <- hour(ALL$Start.Time)
+
+by(ALL$month, ALL$location, summary)
+by(ALL$day, ALL$location, summary)
+by(ALL$hour, ALL$location, summary)
+
+``` 
+
+```{r chunk 3, include=TRUE}
+## Creating visualisations
+
+ggplot(aes(x = month, fill = location), data = ALL) +
+    geom_bar(position = 'dodge', colour="black") +
+    ggtitle('Ride Count by Month') +
+    xlab('Ride Count') +
+    ylab('Month') +
+    scale_fill_manual("legend", values = c("CHI" = "Yellow", "NY" = "blue", "WASH" = "Red"))
+
+ggplot(aes(x = day, fill = location), data = ALL) +
+    geom_bar(position = 'dodge', colour="black") +
+    ggtitle('Ride Count by day') +
+    xlab('Ride Count') +
+    ylab('Day') +
+    scale_fill_manual("legend", values = c("CHI" = "Yellow", "NY" = "blue", "WASH" = "Red"))
+
+ggplot(aes(x = hour, fill = location), data = ALL) +
+    geom_bar(position = 'dodge', colour="black") +
+    ggtitle('Ride Count by Hour') +
+    xlab('Ride Count') +
+    ylab('Hour') +
+    scale_fill_manual("legend", values = c("CHI" = "Yellow", "NY" = "blue", "WASH" = "Red"))
+``` 
+
+# Question 2
+Question 2 examines the popular stations and trips. Analysis is provided below to which was used to answer these questions.
+
+1. What is the common start station?
+2. What is the most common end station?
+3. What is the most common trip from start to end?
+
+```{r chunk 4, include=TRUE}
+by(ALL$Start.Station, ALL$location, summary)
+
+``` 
+
+# Question 3
+Question 3 aims to analyse the trip duration. Analysis is provided below to which was used to answer these questions.
+
+1. What is the total travel time for users in different cities? Chicago users have travelled a total of 78020 hours (rounded to nearest integer), New York users have travelled for a total of 74974 hours and Washington users have travelled for a total of 103107 hours.
+
+2. What is average travel time for users in different cities?
+Chicago users travel an average of 15.6 minutes. New York users travel for an average of 15 minutes and Washington users travel for an average of 20.6 minutes.
+
+```{r chunk 5, include=TRUE}
+ALL$Trip.Duration <- ALL$Trip.Duration/3600
+by(ALL$Trip.Duration, ALL$location, sum)
+
+``` 
+```{r chunk 6, include=TRUE}
+ALL$Trip.Duration <- ALL$Trip.Duration*60
+by(ALL$Trip.Duration, ALL$location, summary)
+
+``` 
+
+# Question 4
+Question 4 examines the user types. Analysis is provided below to which was used to answer these questions.
+
+1. What are the counts of each user type?
+2. What are the counts of each gender? (only available for NYC and Chicago)
+3. What are the earliest, most recent, most common year of birth (Only available for NYC and Chicago)
+
+```{r chunk 7, include=TRUE}
+#y(ALL$User.Type, ALL$location, count)
+
+``` 
