@@ -23,17 +23,16 @@ Thanks to the rise in information technologies, it is easy for a user of the sys
 In this project, you will use data provided by *Motivate*, a bike share system provider for many major cities in the United States, to uncover bike share usage patterns. You will compare the system usage between three large cities: Chicago, New York City, and Washington, DC.
 
 The questions to explore include;
-  1. What are popular times of travel? i.e. common month? common day of week? common hour?
-  2. What are the most popular stations and trips?
-  3. What are the statistical breakdowns for trip duration?
-  4. What are the counts of each user type?
- 
 
-\newpage
+1. What are popular times of travel? i.e. common month? common day of week? common hour?
+2. What are the most popular stations and trips?
+3. What are the statistical breakdowns for trip duration?
+4. What are the counts of each user type?
+ 
 
 Set-up and initial synthesis of the dataset is required in order to prepare for the questions later to explore. Installing the required packages followed by setting up the directory and importing the data will occur first. Some preliminary data manipulation will also occur to improve ease and efficiency of which we examine the data.
 
-```{r setup, include=TRUE, message=FALSE}
+```{r setup, include=TRUE, echo = TRUE, warning = FALSE, message = FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
 library(ggplot2)
@@ -48,9 +47,9 @@ ny <- read.csv('new-york-city.csv')
 wash <- read.csv('washington.csv')
 chi <- read.csv('chicago.csv')
 
-head(ny)
-head(wash)
-head(chi)
+head(ny) #for reference to data structure
+#head(wash)
+#head(chi)
 ```
 
 ```{r chunk 1, include=TRUE}
@@ -72,9 +71,9 @@ ALL <- bind_rows (ny, wash, chi)
 # Question 1
 Question 1 examines the popular times of travel. Analysis is provided below to which was used to answer these questions.
 
-1. What is the most common month? June was consistently seen as the most popular month across all locations.
-2. What is the most common day of the week to travel? Wednesday was the most popular for Washington and New York, albeit Chicago saw Tuesday to be its most popular day.
-3. What is the most common hour of the day to travel? Chicago and New York saw 5:00PM to be its common hour of travel which aligns with common peak-hour notions. Washington however saw 8:00AM to be its common hour.
+1. What is the most common month? **June was consistently seen as the most popular month across all locations.**
+2. What is the most common day of the week to travel? **Wednesday was the most popular for Washington and New York, albeit Chicago saw Tuesday to be its most popular day.**
+3. What is the most common hour of the day to travel? **Chicago and New York saw 5:00PM to be its common hour of travel which aligns with common peak-hour notions. Washington however saw 8:00AM to be its common hour.**
 
 ```{r chunk 2, include=TRUE}
 class(ALL$Start.Time) #character
@@ -118,24 +117,48 @@ ggplot(aes(x = hour, fill = location), data = ALL) +
 ``` 
 
 # Question 2
-Question 2 examines the popular stations and trips. Analysis is provided below to which was used to answer these questions.
+Question 2 examines the popular starting and ending station. Analysis is provided below to which was used to answer these questions.
 
 1. What is the common start station?
-2. What is the most common end station?
-3. What is the most common trip from start to end?
+**Chicago - Streeter Dr & Grand Ave **
+**NY - Pershing Square North **
+**Wash - Columbus Circle / Union Station **
+2. Common end station?
+**Chicago - Streeter Dr & Grand Ave **
+**NY - Pershing Square North **
+**Wash - Columbus Circle / Union Station **
+
 
 ```{r chunk 4, include=TRUE}
-by(ALL$Start.Station, ALL$location, summary)
+options(max.print=1)
+
+ChiStart = sort(table((chi$Start.Station)), decreasing = TRUE)
+print(ChiStart)
+
+NYStart = sort(table((ny$Start.Station)), decreasing = TRUE)
+print(NYStart)
+
+WashStart = sort(table((wash$Start.Station)), decreasing = TRUE)
+print(WashStart)
+
+ChiEnd= sort(table((chi$End.Station)), decreasing = TRUE)
+print(ChiEnd)
+
+NYEnd = sort(table((ny$End.Station)), decreasing = TRUE)
+print(NYEnd)
+
+WashEnd = sort(table((wash$End.Station)), decreasing = TRUE)
+print(WashEnd)
 
 ``` 
 
 # Question 3
 Question 3 aims to analyse the trip duration. Analysis is provided below to which was used to answer these questions.
 
-1. What is the total travel time for users in different cities? Chicago users have travelled a total of 78020 hours (rounded to nearest integer), New York users have travelled for a total of 74974 hours and Washington users have travelled for a total of 103107 hours.
+1. What is the total travel time for users in different cities? **Chicago users have travelled a total of 78020 hours (rounded to nearest integer), New York users have travelled for a total of 74974 hours and Washington users have travelled for a total of 103107 hours.**
 
 2. What is average travel time for users in different cities?
-Chicago users travel an average of 15.6 minutes. New York users travel for an average of 15 minutes and Washington users travel for an average of 20.6 minutes.
+**Chicago users travel an average of 15.6 minutes. New York users travel for an average of 15 minutes and Washington users travel for an average of 20.6 minutes.**
 
 ```{r chunk 5, include=TRUE}
 ALL$Trip.Duration <- ALL$Trip.Duration/3600
@@ -151,11 +174,29 @@ by(ALL$Trip.Duration, ALL$location, summary)
 # Question 4
 Question 4 examines the user types. Analysis is provided below to which was used to answer these questions.
 
-1. What are the counts of each user type?
+1. What are the counts of each user type? **There is only 1 user that is a 'dependent' and 170483 users as a customer. 728824 users are subscribers.**
 2. What are the counts of each gender? (only available for NYC and Chicago)
-3. What are the earliest, most recent, most common year of birth (Only available for NYC and Chicago)
+**Based on the two cities, there is a total of 124541 females and 385198 males.**
+
 
 ```{r chunk 7, include=TRUE}
-#y(ALL$User.Type, ALL$location, count)
+options(max.print=10)
+#Counting User Type
+TypeCount = sort(table(subset(ALL$User.Type, !is.na(ALL$User.Type))))
+print(TypeCount)
 
+#Counting Gender split
+GenderCount = sort(table(subset(ALL$Gender, !is.na(ALL$Gender))))
+print(GenderCount)
+
+#Counting Gender split
+round((GenderCount / length(ALL$Gender) * 100), digits = 2)
+
+#Graphing and removing Washington as it has NA values for gender
+ggplot(aes(x = Gender, fill = location), data = ALL[!is.na(ALL$Gender),]) +
+    geom_bar(position = 'dodge', colour="black") +
+    ggtitle('Gender Count') +
+    scale_x_discrete(labels = c('Null', 'Female', 'Male')) +
+    xlab('Gender') +
+    ylab('Users')
 ``` 
